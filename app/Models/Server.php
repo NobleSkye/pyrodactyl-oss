@@ -530,7 +530,27 @@ class Server extends Model
         if (
             $this->isSuspended()
             || $this->node->isUnderMaintenance()
-            || !$this->isInstalled()
+            /* || !$this->isInstalled() */
+            || $this->status === self::STATUS_RESTORING_BACKUP
+            || !is_null($this->transfer)
+        ) {
+            throw new ServerStateConflictException($this);
+        }
+    }
+
+    /**
+     * Checks if the server is currently in a user-accessible state. If not, an
+     * exception is raised. This should be called whenever something needs to make
+     * sure the server is not in a weird state that should block user access.
+     *
+     * @throws ServerStateConflictException
+     */
+    public function validateCurrentStateClient()
+    {
+        if (
+            $this->isSuspended()
+            || $this->node->isUnderMaintenance()
+            /* || !$this->isInstalled() */ // NOTE: this causes issues with how users view servers with the new system
             || $this->status === self::STATUS_RESTORING_BACKUP
             || !is_null($this->transfer)
         ) {
